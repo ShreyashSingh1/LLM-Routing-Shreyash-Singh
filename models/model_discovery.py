@@ -53,6 +53,102 @@ class ModelDiscovery:
                     "response_time": "medium"
                 }
             ],
+            "gpt": [
+                {
+                    "name": "gpt-4o",
+                    "provider": "openai",
+                    "size": "1.8T",
+                    "strengths": ["general_knowledge", "reasoning", "coding", "instruction_following"],
+                    "cost_per_1k_tokens": 0.015,
+                    "response_time": "fast"
+                },
+                {
+                    "name": "gpt-4-turbo",
+                    "provider": "openai",
+                    "size": "1.8T",
+                    "strengths": ["general_knowledge", "reasoning", "coding"],
+                    "cost_per_1k_tokens": 0.01,
+                    "response_time": "medium"
+                },
+                {
+                    "name": "gpt-3.5-turbo",
+                    "provider": "openai",
+                    "size": "175B",
+                    "strengths": ["general_knowledge", "instruction_following"],
+                    "cost_per_1k_tokens": 0.0015,
+                    "response_time": "fast"
+                }
+            ],
+            "claude": [
+                {
+                    "name": "claude-3-opus",
+                    "provider": "anthropic",
+                    "size": "2T",
+                    "strengths": ["reasoning", "creative_writing", "safety"],
+                    "cost_per_1k_tokens": 0.015,
+                    "response_time": "medium"
+                },
+                {
+                    "name": "claude-3-sonnet",
+                    "provider": "anthropic",
+                    "size": "1T",
+                    "strengths": ["reasoning", "creative_writing", "instruction_following"],
+                    "cost_per_1k_tokens": 0.008,
+                    "response_time": "fast"
+                },
+                {
+                    "name": "claude-3-haiku",
+                    "provider": "anthropic",
+                    "size": "400B",
+                    "strengths": ["instruction_following", "general_knowledge"],
+                    "cost_per_1k_tokens": 0.0025,
+                    "response_time": "fast"
+                }
+            ],
+            "palm": [
+                {
+                    "name": "gemini-pro",
+                    "provider": "google",
+                    "size": "1T",
+                    "strengths": ["general_knowledge", "reasoning", "coding"],
+                    "cost_per_1k_tokens": 0.0025,
+                    "response_time": "medium"
+                },
+                {
+                    "name": "gemini-flash",
+                    "provider": "google",
+                    "size": "500B",
+                    "strengths": ["general_knowledge", "instruction_following"],
+                    "cost_per_1k_tokens": 0.0015,
+                    "response_time": "fast"
+                }
+            ],
+            "mistral": [
+                {
+                    "name": "mistral-large",
+                    "provider": "mistral",
+                    "size": "176B",
+                    "strengths": ["general_knowledge", "reasoning", "coding"],
+                    "cost_per_1k_tokens": 0.008,
+                    "response_time": "medium"
+                },
+                {
+                    "name": "mistral-medium",
+                    "provider": "mistral",
+                    "size": "32B",
+                    "strengths": ["general_knowledge", "instruction_following"],
+                    "cost_per_1k_tokens": 0.0025,
+                    "response_time": "fast"
+                },
+                {
+                    "name": "mistral-small",
+                    "provider": "mistral",
+                    "size": "8B",
+                    "strengths": ["instruction_following"],
+                    "cost_per_1k_tokens": 0.0015,
+                    "response_time": "fast"
+                }
+            ],
             "other": [
                 {
                     "name": "falcon-40b",
