@@ -250,7 +250,28 @@ with tabs[2]:
             
             # Display log
             st.markdown(f"**Discovery log entries: {len(discovery_log)}**")
-            st.json(discovery_log)
+            
+            if discovery_log:
+                # Create an expander for the discovery log
+                with st.expander("View Complete Discovery Log", expanded=True):
+                    # Display each entry in a more readable format
+                    for i, entry in enumerate(discovery_log):
+                        st.markdown(f"**Entry {i+1}:**")
+                        # Create a formatted display of each key-value pair
+                        for key, value in entry.items():
+                            if key == "timestamp":
+                                # Convert timestamp to readable format
+                                readable_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(value))
+                                st.markdown(f"- **{key}:** {readable_time}")
+                            else:
+                                st.markdown(f"- **{key}:** {value}")
+                        st.markdown("---")
+            else:
+                st.info("No discovery log entries found.")
+                
+                # Also provide the raw JSON for developers who prefer it
+                with st.expander("View Raw JSON", expanded=False):
+                    st.json(discovery_log)
 
 # Tab 4: Mistral Model Discovery
 with tabs[3]:

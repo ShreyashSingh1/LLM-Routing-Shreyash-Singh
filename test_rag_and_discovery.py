@@ -115,6 +115,16 @@ def test_router_model_discovery():
     # Get discovery log
     discovery_log = router_discovery.get_discovery_log()
     print(f"\nDiscovery log entries: {len(discovery_log)}")
+    
+    # Display the discovery log entries
+    if discovery_log:
+        print("\nDiscovery Log:")
+        for i, entry in enumerate(discovery_log):
+            print(f"\nEntry {i+1}:")
+            for key, value in entry.items():
+                print(f"  {key}: {value}")
+    else:
+        print("\nNo discovery log entries found.")
 
 
 def test_mistral_model_discovery():
