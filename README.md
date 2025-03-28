@@ -16,48 +16,46 @@ The system uses LangGraph to create a flexible, maintainable workflow that can b
 
 ## Features
 
+### Core Routing
 - Query analysis to extract key characteristics
 - Dynamic model selection based on multiple criteria
 - Performance tracking and feedback loop
 - Extensible architecture for adding new models
 - Configurable routing policies
-- RAG-style knowledge base for fallback responses
-- Model discovery system to find and evaluate new LLMs
-- Automatic configuration updates for promising models
 
-## Project Structure
+### RAG System
+- Knowledge base integration for enhanced responses
+- Fallback mechanism when models lack specific knowledge
+- Domain-specific document retrieval
+- Contextual augmentation of model responses
 
-```
-├── README.md
-├── requirements.txt
-├── config.py            # Configuration settings
-├── router/
-│   ├── __init__.py
-│   ├── analyzer.py      # Query analysis component
-│   ├── selector.py      # Model selection logic
-│   ├── feedback.py      # Performance tracking
-│   ├── discovery.py     # Router model discovery integration
-│   └── graph.py         # LangGraph workflow definition
-├── models/
-│   ├── __init__.py
-│   ├── base.py          # Base model interface
-│   ├── openai.py        # OpenAI model implementation
-│   ├── anthropic.py     # Anthropic model implementation
-│   ├── mistral.py       # Mistral model implementation
-│   ├── google.py        # Google model implementation
-│   ├── knowledge_base.py # RAG-style knowledge base
-│   └── model_discovery.py # Model discovery system
-├── test_rag_and_discovery.py # Test script for RAG and discovery features
-└── app.py               # Main application entry point
-```
+### Model Discovery
+- Automatic discovery of new LLM models
+- Performance evaluation against benchmarks
+- Integration of promising models into the routing system
+- Provider-specific model variant discovery
+- Configuration updates for new models
 
 ## Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/Dynamic-LLM-Router.git
+cd Dynamic-LLM-Router
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Set up environment variables (for production use)
+echo "OPENAI_API_KEY=your_openai_key" > .env
+echo "ANTHROPIC_API_KEY=your_anthropic_key" >> .env
+echo "MISTRAL_API_KEY=your_mistral_key" >> .env
+echo "GOOGLE_API_KEY=your_google_key" >> .env
 ```
 
 ## Usage
+
+### Basic Usage
 
 ```python
 from router import create_router
@@ -98,37 +96,118 @@ model_discovery = ModelDiscovery()
 llama_models = model_discovery.search_models(category="llama")
 
 # Evaluate a model
-model_to_evaluate = llama_models[0]
-evaluation_scores = model_discovery.evaluate_model(model_to_evaluate)
-
-# Check if the model is promising and add to config if it is
-if model_discovery.is_promising(evaluation_scores):
-    updated_config = model_discovery.add_to_config(model_to_evaluate, "meta")
-
-# Or use the router discovery integration
-router_discovery = RouterModelDiscovery()
-promising_models, updated_config = router_discovery.discover_llama_variants()
+if llama_models:
+    model_to_evaluate = llama_models[0]
+    evaluation_scores = model_discovery.evaluate_model(model_to_evaluate)
+    
+    # Check if the model is promising
+    is_promising = model_discovery.is_promising(evaluation_scores)
+    
+    # Add to config if promising
+    if is_promising:
+        updated_config = model_discovery.add_to_config(model_to_evaluate, "meta")
 ```
 
-## Extending
+### Running the Web Interface
+
+The project includes a Streamlit web interface for testing the router, RAG system, and model discovery features:
+
+```bash
+# Run the Streamlit app
+streamlit run app.py
+```
+
+This will launch a web interface where you can:
+- Submit queries to the router
+- View query analysis and provider selection
+- Test the RAG system with various domains
+- Explore model discovery features
+
+## Project Structure
+
+```
+├── README.md
+├── requirements.txt
+├── config.py            # Configuration settings
+├── router/
+│   ├── __init__.py
+│   ├── analyzer.py      # Query analysis component
+│   ├── selector.py      # Model selection logic
+│   ├── feedback.py      # Performance tracking
+│   ├── discovery.py     # Router model discovery integration
+│   └── graph.py         # LangGraph workflow definition
+├── models/
+│   ├── __init__.py
+│   ├── base.py          # Base model interface
+│   ├── openai.py        # OpenAI model implementation
+│   ├── anthropic.py     # Anthropic model implementation
+│   ├── mistral.py       # Mistral model implementation
+│   ├── google.py        # Google model implementation
+│   ├── knowledge_base.py # RAG-style knowledge base
+│   └── model_discovery.py # Model discovery system
+├── test_rag_and_discovery.py # Test script for RAG and discovery features
+└── app.py               # Main application entry point
+```
+
+## Testing
+
+The project includes a test script for the RAG system and model discovery features:
+
+```bash
+# Run the test script
+python test_rag_and_discovery.py
+```
+
+This will test:
+- RAG-style fallback for different domains
+- Model discovery for LLaMA variants
+- Model evaluation and configuration updates
+
+## Extending the System
 
 ### Adding a New LLM Provider
 
-1. Create a new model implementation in the `models/` directory
+1. Create a new model implementation in the `models/` directory:
+   ```python
+   from models.base import BaseProvider
+   
+   class NewProvider(BaseProvider):
+       def __init__(self, config):
+           super().__init__(config)
+           # Initialize provider-specific components
+       
+       def generate(self, query, use_fallback=False):
+           # Implement generation logic
+           pass
+   ```
+
 2. Update the model selection logic in `router/selector.py`
 3. Add any new routing criteria to `router/analyzer.py`
 
-### Enhancing the RAG System
+### Customizing Routing Logic
 
-1. Modify the `KnowledgeBase` class in `models/knowledge_base.py`
-2. Add new knowledge domains or connect to a vector database
-3. Implement more sophisticated retrieval methods
+The routing logic can be customized by modifying:
+- Query analysis in `router/analyzer.py`
+- Model selection criteria in `router/selector.py`
+- The LangGraph workflow in `router/graph.py`
 
-### Improving Model Discovery
+### Improving the Knowledge Base
 
-1. Extend the `ModelDiscovery` class in `models/model_discovery.py`
-2. Add connections to real model repositories or APIs
-3. Implement more rigorous evaluation methods
+The RAG-style knowledge base can be extended by:
+- Adding new documents to the knowledge base
+- Improving the retrieval mechanism in `models/knowledge_base.py`
+- Customizing the document processing pipeline
+
+## Dependencies
+
+- langchain (>= 0.1.0)
+- langchain-core (>= 0.1.0)
+- langgraph (>= 0.0.15)
+- streamlit (>= 1.28.0)
+- pydantic (>= 2.0.0)
+- python-dotenv (>= 1.0.0)
+- numpy (>= 1.24.0)
+- scikit-learn (>= 1.3.0)
 
 ## License
 
