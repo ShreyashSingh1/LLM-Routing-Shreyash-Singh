@@ -40,7 +40,7 @@ The system uses LangGraph to create a flexible, maintainable workflow that can b
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/Dynamic-LLM-Router.git
+git clone https://github.com/ShreyashSingh1/LLM-Routing-Shreyash-Singh.git
 cd Dynamic-LLM-Router
 
 # Install dependencies
