@@ -91,3 +91,62 @@ FEEDBACK_CONFIG = {
     "performance_window": 10,  # Number of recent queries to consider for performance
     "min_feedback_samples": 5,  # Minimum samples needed before considering feedback
 }
+
+# Cache configuration
+CACHE_CONFIG = {
+    "enabled": True,
+    "max_size": 1000,  # Maximum number of entries in the cache
+    "default_ttl": 3600,  # Default time-to-live in seconds (1 hour)
+    "strategy": "ttl",  # Cache invalidation strategy ('ttl', 'lru', or 'lfu')
+    "ttl_by_domain": {  # Custom TTL by domain (in seconds)
+        "general_knowledge": 86400,  # 24 hours for general knowledge
+        "news": 1800,  # 30 minutes for news-related queries
+        "weather": 900,  # 15 minutes for weather-related queries
+        "coding": 604800,  # 1 week for coding-related queries
+    },
+}
+
+# Experiment configuration
+EXPERIMENT_CONFIG = {
+    "enabled": True,
+    "default_traffic_split": {
+        "standard": 0.7,  # 70% of traffic to standard routing
+        "experimental": 0.3,  # 30% of traffic to experimental routing
+    },
+    "metrics": [
+        "latency",
+        "user_rating",
+        "success_rate",
+        "token_usage",
+        "cost",
+    ],
+}
+
+# Enhanced analyzer configuration
+ANALYZER_CONFIG = {
+    "sentiment_analysis": {
+        "enabled": True,
+        "urgency_keywords": [
+            "urgent", "emergency", "immediately", "asap", "critical", "now", "hurry"
+        ],
+    },
+    "language_detection": {
+        "enabled": True,
+        "confidence_threshold": 0.5,  # Minimum confidence for language detection
+    },
+    "topic_classification": {
+        "enabled": True,
+        "n_topics": 10,  # Number of topics for classification
+    },
+    "complexity_estimation": {
+        "enabled": True,
+        "weights": {
+            "word_count": 0.3,
+            "sentence_length": 0.2,
+            "vocabulary_richness": 0.2,
+            "question_count": 0.1,
+            "nested_structure": 0.1,
+            "multi_part": 0.1,
+        },
+    },
+}

@@ -9,11 +9,15 @@ from config import MODEL_CONFIGS, ROUTING_CONFIG
 class ModelSelector:
     """Selects the most appropriate LLM provider based on query characteristics."""
     
-    def __init__(self):
-        """Initialize the model selector."""
+    def __init__(self, weights=None):
+        """Initialize the model selector.
+        
+        Args:
+            weights: Optional custom weights for scoring factors. If None, uses weights from config.
+        """
         self.model_configs = MODEL_CONFIGS
         self.routing_config = ROUTING_CONFIG
-        self.weights = self.routing_config["weights"]
+        self.weights = weights if weights is not None else self.routing_config["weights"]
         self.domains = self.routing_config["domains"]
         self.default_provider = self.routing_config["default_provider"]
     
