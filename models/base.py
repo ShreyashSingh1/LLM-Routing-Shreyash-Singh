@@ -11,6 +11,15 @@ from functools import wraps
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+from langchain_groq import ChatGroq  # Add this import
+
+# Debugging the import
+try:
+    assert ChatGroq is not None
+    logger.info("ChatGroq successfully imported.")
+except Exception as e:
+    logger.error(f"Failed to import ChatGroq: {e}")
+
 
 class LLMProviderError(Exception):
     """Base exception class for LLM provider errors."""
@@ -243,9 +252,8 @@ class LLMProvider(ABC):
         else:
             raise LLMProviderError("Failed to generate response after retries")
     
-    @abstractmethod
     def generate(self, prompt: str, **kwargs) -> Dict[str, Any]:
-        """Generate a response for the given prompt.
+        """Generate a response using LangChain's ChatGroq model.
         
         Args:
             prompt: The input prompt/query
@@ -253,11 +261,49 @@ class LLMProvider(ABC):
             
         Returns:
             Dictionary containing the response and metadata
-            
-        Raises:
-            Various LLMProviderError subclasses for specific error conditions
         """
-        pass
+        # Initialize ChatGroq model
+        chat_model = ChatGroq(
+            model="Llama3-8b-8192",
+            groq_api_key="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"
+        )
+
+        try:
+            # Generate response
+            response = chat_model.invoke(prompt)
+            logger.info(f"Raw response from ChatGroq: {response}")
+
+            # Validate and extract response text
+            if hasattr(response, "content") and isinstance(response.content, str):
+                response_text = response.content.strip()
+            else:
+                logger.error(f"Unexpected response format: {response}")
+                raise ProviderAPIError("Unexpected response format from ChatGroq.")
+
+            # Extract token usage and other metadata if available
+            token_usage = response.response_metadata.get("token_usage", {})
+            prompt_tokens = token_usage.get("prompt_tokens", 0)
+            completion_tokens = token_usage.get("completion_tokens", 0)
+            total_tokens = token_usage.get("total_tokens", prompt_tokens + completion_tokens)
+
+            return {
+                "content": response_text,
+                "model": response.response_metadata.get("model_name", self.default_model),
+                "provider": self.__class__.__name__,
+                "tokens": {
+                    "prompt": prompt_tokens,
+                    "completion": completion_tokens,
+                    "total": total_tokens
+                },
+                "cost": (total_tokens / 1000) * self.cost_per_1k_tokens,
+                "latency": token_usage.get("total_time", 0)  # Use total_time as latency if available
+            }
+        except ProviderAPIError as e:
+            logger.error(f"Error generating response: {str(e)}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error during generation: {str(e)}")
+            raise ProviderAPIError(f"Unexpected error: {str(e)}")
     
     @property
     def strengths(self) -> List[str]:

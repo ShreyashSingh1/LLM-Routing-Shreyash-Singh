@@ -121,65 +121,27 @@ class QueryCache:
         return hashlib.md5(normalized.encode()).hexdigest()
     
     def get(self, query: str) -> Optional[Dict[str, Any]]:
-        """Get a cached response for a query.
-        
-        Args:
-            query: The query string
-            
-        Returns:
-            Cached response with metadata or None if not found
-        """
+        """Retrieve a response from the cache."""
         key = self._generate_key(query)
-        
         with self.lock:
-            if key in self.cache:
-                entry = self.cache[key]
-                
-                # Check if expired
-                if entry.is_expired():
-                    # Remove expired entry
+            entry = self.cache.get(key)
+            if entry and not entry.is_expired():
+                # Validate the cached response
+                if "content" in entry.response and "tokens" in entry.response and "cost" in entry.response:
+                    self.stats["hits"] += 1
+                    print(f"[Cache] HIT: Query '{query}' retrieved from cache.")
+                    return entry.response
+                else:
+                    # Invalidate the corrupted cache entry
+                    print(f"[Cache] INVALID: Query '{query}' has invalid cache data. Treating as a miss.")
                     del self.cache[key]
-                    self.stats["expirations"] += 1
-                    self.stats["misses"] += 1
-                    return None
-                
-                # Update access information
-                entry.access()
-                
-                # For LRU strategy, move to end of OrderedDict
-                if self.strategy == "lru":
-                    self.cache.move_to_end(key)
-                
-                # For LFU strategy, update access count
-                if self.strategy == "lfu":
-                    self.access_counts[key] = entry.access_count
-                
-                self.stats["hits"] += 1
-                
-                # Return a copy of the response with cache metadata
-                response_with_metadata = entry.response.copy()
-                if "metadata" not in response_with_metadata:
-                    response_with_metadata["metadata"] = {}
-                
-                response_with_metadata["metadata"]["cached"] = True
-                response_with_metadata["metadata"]["cache_age"] = time.time() - entry.created_at
-                response_with_metadata["metadata"]["original_provider"] = entry.provider
-                
-                return response_with_metadata
-            else:
-                self.stats["misses"] += 1
-                return None
-    
+            self.stats["misses"] += 1
+            print(f"[Cache] MISS: Query '{query}' not found or expired.")
+            return None
+
     def set(self, query: str, response: Dict[str, Any], provider: str, 
             ttl: Optional[int] = None) -> None:
-        """Store a response in the cache.
-        
-        Args:
-            query: The query string
-            response: The response to cache
-            provider: The provider that generated the response
-            ttl: Optional custom TTL in seconds
-        """
+        """Store a response in the cache."""
         key = self._generate_key(query)
         ttl = ttl if ttl is not None else self.default_ttl
         
@@ -194,13 +156,12 @@ class QueryCache:
             # Add to cache
             self.cache[key] = entry
             
+            # Debug log for cache set
+            print(f"[Cache] SET: Query '{query}' stored in cache with TTL {ttl} seconds.")
+            
             # For LRU strategy, ensure it's at the end (most recently used)
             if self.strategy == "lru":
                 self.cache.move_to_end(key)
-            
-            # For LFU strategy, initialize access count
-            if self.strategy == "lfu":
-                self.access_counts[key] = 0
     
     def _evict_entries(self, count: int = 1) -> None:
         """Evict entries based on the current invalidation strategy.

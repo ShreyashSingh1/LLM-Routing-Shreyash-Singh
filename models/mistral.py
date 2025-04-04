@@ -29,24 +29,8 @@ class MistralProvider(LLMProvider):
         self.last_discovery_time = 0
     
     def generate(self, prompt: str, **kwargs) -> Dict[str, Any]:
-        """Generate a response using Mistral's API (mock implementation).
-        
-        Args:
-            prompt: The input prompt/query
-            **kwargs: Additional parameters for the generation
-            
-        Returns:
-            Dictionary containing the response and metadata
-        """
-        # Check if we should use the fallback model
-        use_fallback = kwargs.get("use_fallback", False)
-        
-        if use_fallback and self.fallback_model:
-            # Use RAG-style fallback with knowledge base
-            return self.rag_generate(prompt, **kwargs)
-        else:
-            # Use the standard mock implementation from the base class
-            return self.mock_generate(prompt, **kwargs)
+        """Generate a response using LangChain's ChatGroq model."""
+        return super().generate(prompt, **kwargs)
     
     def rag_generate(self, prompt: str, **kwargs) -> Dict[str, Any]:
         """Generate a response using RAG-style fallback with knowledge base.

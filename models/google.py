@@ -17,14 +17,5 @@ class GoogleProvider(LLMProvider):
         super().__init__(config)
     
     def generate(self, prompt: str, **kwargs) -> Dict[str, Any]:
-        """Generate a response using Google's API (mock implementation).
-        
-        Args:
-            prompt: The input prompt/query
-            **kwargs: Additional parameters for the generation
-            
-        Returns:
-            Dictionary containing the response and metadata
-        """
-        # Use the mock implementation from the base class
-        return self.mock_generate(prompt, **kwargs)
+        """Generate a response using LangChain's ChatGroq model."""
+        return super().generate(prompt, **kwargs)
