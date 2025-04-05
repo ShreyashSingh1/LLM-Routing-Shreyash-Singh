@@ -1,126 +1,90 @@
-"""FastAPI application for the Dynamic LLM Router."""
+"""Flask application for the Dynamic LLM Router."""
 
-from typing import Dict, Any, Optional
-import time
-from fastapi import FastAPI, HTTPException, Depends, Request, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
-import uvicorn
+from flask import Flask, jsonify, request, abort
 from dotenv import load_dotenv
 import os
-
+import time
 from router import create_router
-from models.base import LLMProviderError, RateLimitError, AuthenticationError, ProviderAPIError, \
-    ContextLengthExceededError, TimeoutError, NetworkError, InvalidRequestError, \
-    ModelNotAvailableError, ContentFilterError
+from models.base import LLMProviderError
 
 # Load environment variables
 load_dotenv()
 
 # Set mock API keys if not present
-if not os.environ.get("OPENAI_API_KEY"):
-    os.environ["OPENAI_API_KEY"] = "mock-openai-key"
-if not os.environ.get("ANTHROPIC_API_KEY"):
-    os.environ["ANTHROPIC_API_KEY"] = "mock-anthropic-key"
-if not os.environ.get("MISTRAL_API_KEY"):
-    os.environ["MISTRAL_API_KEY"] = "mock-mistral-key"
-if not os.environ.get("GOOGLE_API_KEY"):
-    os.environ["GOOGLE_API_KEY"] = "mock-google-key"
+os.environ.setdefault("OPENAI_API_KEY", "mock-openai-key")
+os.environ.setdefault("ANTHROPIC_API_KEY", "mock-anthropic-key")
+os.environ.setdefault("MISTRAL_API_KEY", "mock-mistral-key")
+os.environ.setdefault("GOOGLE_API_KEY", "mock-google-key")
 
-# Create FastAPI app
-app = FastAPI(
-    title="Dynamic LLM Router API",
-    description="API for routing queries to the most appropriate LLM provider",
-    version="1.0.0",
-)
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Create Flask app
+app = Flask(__name__)
 
 # Create router instance
 llm_router = create_router()
 
-# Define request models
-class QueryRequest(BaseModel):
-    query: str = Field(..., description="The input query/prompt to process")
-    context: Optional[Dict[str, Any]] = Field(None, description="Optional context information")
-    provider_override: Optional[str] = Field(None, description="Optional provider override")
-    
-class FeedbackRequest(BaseModel):
-    query_id: str = Field(..., description="ID of the query to provide feedback for")
-    rating: int = Field(..., ge=1, le=5, description="Rating from 1-5")
-    comments: Optional[str] = Field(None, description="Optional feedback comments")
-
 # Error handling
-@app.exception_handler(LLMProviderError)
-def llm_provider_error_handler(request: Request, exc: LLMProviderError):
+@app.errorhandler(LLMProviderError)
+def handle_llm_provider_error(error):
     status_code = 500
-    
-    # Map specific errors to appropriate status codes
-    if isinstance(exc, RateLimitError):
+    error_type = error.__class__.__name__
+
+    if error_type == "RateLimitError":
         status_code = 429
-    elif isinstance(exc, AuthenticationError):
+    elif error_type == "AuthenticationError":
         status_code = 401
-    elif isinstance(exc, InvalidRequestError):
+    elif error_type == "InvalidRequestError":
         status_code = 400
-    elif isinstance(exc, ContextLengthExceededError):
+    elif error_type == "ContextLengthExceededError":
         status_code = 413
-    elif isinstance(exc, ModelNotAvailableError):
+    elif error_type == "ModelNotAvailableError":
         status_code = 503
-    elif isinstance(exc, TimeoutError) or isinstance(exc, NetworkError):
+    elif error_type in ["TimeoutError", "NetworkError"]:
         status_code = 504
-    
-    return JSONResponse(
-        status_code=status_code,
-        content={
-            "error": {
-                "type": exc.__class__.__name__,
-                "message": str(exc),
-                "details": getattr(exc, "details", {})
-            }
+
+    return jsonify({
+        "error": {
+            "type": error_type,
+            "message": str(error),
+            "details": getattr(error, "details", {})
         }
-    )
+    }), status_code
 
 # API endpoints
-@app.get("/")
+@app.route("/", methods=["GET"])
 def read_root():
-    return {"message": "Welcome to the Dynamic LLM Router API"}
+    return jsonify({"message": "Welcome to the Dynamic LLM Router API"})
 
-@app.get("/health")
+@app.route("/health", methods=["GET"])
 def health_check():
-    return {"status": "healthy"}
+    return jsonify({"status": "healthy"})
 
-@app.post("/query")
-def process_query(request: QueryRequest):
+@app.route("/query", methods=["POST"])
+def process_query():
     """Process a query through the LLM router."""
+    data = request.json
+    if not data or "query" not in data:
+        abort(400, description="Missing 'query' in request body")
+
+    query = data["query"]
+    context = data.get("context", None)
+
     start_time = time.time()
-    
-    # Route the query
-    response = llm_router.route(request.query, request.context)
-    
-    # Add timing information
+    response = llm_router.route(query, context)
     end_time = time.time()
+
     if "metadata" not in response:
         response["metadata"] = {}
     response["metadata"]["api_latency"] = end_time - start_time
-    
-    return response
 
-@app.get("/providers")
+    return jsonify(response)
+
+@app.route("/providers", methods=["GET"])
 def list_providers():
     """List available LLM providers and their configurations."""
     from config import MODEL_CONFIGS
-    
+
     providers = {}
     for provider_name, config in MODEL_CONFIGS.items():
-        # Filter out sensitive information
         safe_config = {
             "default_model": config.get("default_model"),
             "fallback_model": config.get("fallback_model"),
@@ -129,56 +93,58 @@ def list_providers():
             "cost_per_1k_tokens": config.get("cost_per_1k_tokens"),
         }
         providers[provider_name] = safe_config
-    
-    return {"providers": providers}
 
-@app.post("/feedback")
-def submit_feedback(feedback: FeedbackRequest):
+    return jsonify({"providers": providers})
+
+@app.route("/feedback", methods=["POST"])
+def submit_feedback():
     """Submit feedback for a previous query."""
-    # Record the feedback
-    success = llm_router.feedback.record_feedback(
-        query_id=feedback.query_id,
-        rating=feedback.rating,
-        comments=feedback.comments
-    )
-    
-    if not success:
-        raise HTTPException(status_code=404, detail="Query ID not found")
-    
-    return {"message": "Feedback recorded successfully"}
+    data = request.json
+    if not data or "query_id" not in data or "rating" not in data:
+        abort(400, description="Missing 'query_id' or 'rating' in request body")
 
-@app.get("/cache/stats")
+    query_id = data["query_id"]
+    rating = data["rating"]
+    comments = data.get("comments", None)
+
+    success = llm_router.feedback.record_feedback(query_id, rating, comments)
+    if not success:
+        abort(404, description="Query ID not found")
+
+    return jsonify({"message": "Feedback recorded successfully"})
+
+@app.route("/cache/stats", methods=["GET"])
 def get_cache_stats():
     """Get cache statistics."""
     if not llm_router.cache_enabled:
-        return {"enabled": False}
-    
-    return {
+        return jsonify({"enabled": False})
+
+    return jsonify({
         "enabled": True,
         "stats": llm_router.cache.get_stats()
-    }
+    })
 
-@app.post("/cache/clear")
+@app.route("/cache/clear", methods=["POST"])
 def clear_cache():
     """Clear the query cache."""
     if not llm_router.cache_enabled:
-        return {"enabled": False}
-    
-    llm_router.cache.clear()
-    return {"message": "Cache cleared successfully"}
+        return jsonify({"enabled": False})
 
-@app.get("/experiments")
+    llm_router.cache.clear()
+    return jsonify({"message": "Cache cleared successfully"})
+
+@app.route("/experiments", methods=["GET"])
 def get_experiments():
     """Get information about active experiments."""
     if not llm_router.experiments_enabled:
-        return {"enabled": False}
-    
-    return {
+        return jsonify({"enabled": False})
+
+    return jsonify({
         "enabled": True,
         "active_experiment": llm_router.experiments.active_experiment,
         "strategies": list(llm_router.experiments.strategy_registry.keys())
-    }
+    })
 
 # Run the application
 if __name__ == "__main__":
-    uvicorn.run("application:app", host="0.0.0.0", port=8000, reload=True)
+    app.run(host="0.0.0.0", port=8000, debug=True)

@@ -1,0 +1,173 @@
+# API Requests Guide for Dynamic LLM Router
+
+This guide explains how to use Postman to interact with the APIs provided by the Dynamic LLM Router.
+
+---
+
+## 1. Health Check
+**Endpoint**: `GET /health`  
+**Description**: Check if the API is running.
+
+### Steps:
+1. Open Postman and create a new request.
+2. Set the method to `GET`.
+3. Enter the URL: `http://localhost:8000/health`.
+4. Click `Send`.
+
+**Expected Response**:
+```json
+{
+    "status": "healthy"
+}
+```
+
+---
+
+## 2. Process Query
+**Endpoint**: `POST /query`  
+**Description**: Route a query to the most appropriate LLM provider.
+
+### Steps:
+1. Open Postman and create a new request.
+2. Set the method to `POST`.
+3. Enter the URL: `http://localhost:8000/query`.
+4. Go to the `Body` tab and select `raw` and `JSON` format.
+5. Enter the following JSON:
+```json
+{
+    "query": "What is the capital of France?",
+    "context": {
+        "domain": "geography"
+    }
+}
+```
+6. Click `Send`.
+
+**Expected Response**:
+```json
+{
+    "content": "The capital of France is Paris.",
+    "metadata": {
+        "api_latency": 0.123
+    }
+}
+```
+
+---
+
+## 3. List Providers
+**Endpoint**: `GET /providers`  
+**Description**: List all available LLM providers and their configurations.
+
+### Steps:
+1. Open Postman and create a new request.
+2. Set the method to `GET`.
+3. Enter the URL: `http://localhost:8000/providers`.
+4. Click `Send`.
+
+**Expected Response**:
+```json
+{
+    "providers": {
+        "openai": {
+            "default_model": "gpt-4",
+            "fallback_model": "gpt-3.5",
+            "strengths": ["general knowledge", "creative writing"],
+            "response_time": "fast",
+            "cost_per_1k_tokens": 0.03
+        }
+    }
+}
+```
+
+---
+
+## 4. Submit Feedback
+**Endpoint**: `POST /feedback`  
+**Description**: Submit feedback for a previous query.
+
+### Steps:
+1. Open Postman and create a new request.
+2. Set the method to `POST`.
+3. Enter the URL: `http://localhost:8000/feedback`.
+4. Go to the `Body` tab and select `raw` and `JSON` format.
+5. Enter the following JSON:
+```json
+{
+    "query_id": "12345",
+    "rating": 5,
+    "comments": "Great response!"
+}
+```
+6. Click `Send`.
+
+**Expected Response**:
+```json
+{
+    "message": "Feedback recorded successfully"
+}
+```
+
+---
+
+## 5. Get Cache Statistics
+**Endpoint**: `GET /cache/stats`  
+**Description**: Retrieve cache statistics.
+
+### Steps:
+1. Open Postman and create a new request.
+2. Set the method to `GET`.
+3. Enter the URL: `http://localhost:8000/cache/stats`.
+4. Click `Send`.
+
+**Expected Response**:
+```json
+{
+    "enabled": true,
+    "stats": {
+        "hits": 10,
+        "misses": 5,
+        "size": 15
+    }
+}
+```
+
+---
+
+## 6. Clear Cache
+**Endpoint**: `POST /cache/clear`  
+**Description**: Clear the query cache.
+
+### Steps:
+1. Open Postman and create a new request.
+2. Set the method to `POST`.
+3. Enter the URL: `http://localhost:8000/cache/clear`.
+4. Click `Send`.
+
+**Expected Response**:
+```json
+{
+    "message": "Cache cleared successfully"
+}
+```
+
+---
+
+## 7. Get Experiments
+**Endpoint**: `GET /experiments`  
+**Description**: Retrieve information about active experiments.
+
+### Steps:
+1. Open Postman and create a new request.
+2. Set the method to `GET`.
+3. Enter the URL: `http://localhost:8000/experiments`.
+4. Click `Send`.
+
+**Expected Response**:
+```json
+{
+    "enabled": true,
+    "active_experiment": "experiment-1",
+    "strategies": ["strategy-a", "strategy-b"]
+}
+```

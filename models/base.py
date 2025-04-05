@@ -252,6 +252,24 @@ class LLMProvider(ABC):
         else:
             raise LLMProviderError("Failed to generate response after retries")
     
+    def process_response(self, response):
+        """Process the response from the LLM."""
+        try:
+            # Safely access response_metadata if it exists
+            response_metadata = getattr(response, "response_metadata", None)
+            if response_metadata is None:
+                logger.warning("Response metadata is missing in the AIMessage object.")
+                response_metadata = {}  # Provide a default empty dictionary
+
+            # Process the response content
+            content = response.content
+            logger.info(f"Processed response content: {content}")
+            return {"content": content, "metadata": response_metadata}
+
+        except AttributeError as e:
+            logger.error(f"Unexpected error during response processing: {e}")
+            raise
+
     def generate(self, prompt: str, **kwargs) -> Dict[str, Any]:
         """Generate a response using LangChain's ChatGroq model.
         
@@ -280,15 +298,21 @@ class LLMProvider(ABC):
                 logger.error(f"Unexpected response format: {response}")
                 raise ProviderAPIError("Unexpected response format from ChatGroq.")
 
-            # Extract token usage and other metadata if available
-            token_usage = response.response_metadata.get("token_usage", {})
+            # Safely extract token usage and other metadata
+            response_metadata = getattr(response, "response_metadata", {})
+            if not isinstance(response_metadata, dict):
+                logger.warning("Response metadata is not a dictionary. Defaulting to empty metadata.")
+                response_metadata = {}
+
+            token_usage = response_metadata.get("token_usage", {})
             prompt_tokens = token_usage.get("prompt_tokens", 0)
             completion_tokens = token_usage.get("completion_tokens", 0)
             total_tokens = token_usage.get("total_tokens", prompt_tokens + completion_tokens)
 
+            # Correctly format the return dictionary
             return {
                 "content": response_text,
-                "model": response.response_metadata.get("model_name", self.default_model),
+                "model": response_metadata.get("model_name", self.default_model),
                 "provider": self.__class__.__name__,
                 "tokens": {
                     "prompt": prompt_tokens,
