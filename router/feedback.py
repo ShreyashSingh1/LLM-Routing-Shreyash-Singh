@@ -146,3 +146,28 @@ class FeedbackSystem:
         total_feedback = stats["success_count"] + stats["failure_count"]
         
         return total_feedback >= self.min_feedback_samples
+
+    def record_feedback(self, query_id: str, rating: int, comments: Optional[str] = None) -> bool:
+        """Record feedback for a specific query.
+
+        Args:
+            query_id: The unique identifier of the query.
+            rating: The feedback rating (e.g., 1-5).
+            comments: Optional comments about the feedback.
+
+        Returns:
+            True if the feedback was recorded successfully, False otherwise.
+        """
+        # Search for the query in the history
+        for record in self.query_history:
+            if record.get("query_id") == query_id:
+                # Update the feedback in the record
+                record["feedback"] = {
+                    "rating": rating,
+                    "comments": comments,
+                    "success": rating >= 3  # Consider ratings 3 and above as successful
+                }
+                return True
+
+        # Query ID not found
+        return False

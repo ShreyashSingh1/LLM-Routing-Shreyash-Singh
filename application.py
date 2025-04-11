@@ -109,7 +109,7 @@ def submit_feedback():
 
     success = llm_router.feedback.record_feedback(query_id, rating, comments)
     if not success:
-        abort(404, description="Query ID not found")
+        abort(404, description=f"Query ID '{query_id}' not found. Please ensure the query ID is correct.")
 
     return jsonify({"message": "Feedback recorded successfully"})
 
